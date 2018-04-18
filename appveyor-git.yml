@@ -1,0 +1,67 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+configuration: Release
+assembly_info:
+  patch: true
+  file: '**\AssemblyInfo.*'
+  assembly_version: '{version}'
+  assembly_file_version: '{version}'
+  assembly_informational_version: '{version}'
+environment:
+  PROGET_API_KEY:
+    secure: cK5vivAu043l5udO8/xlrju1zldGzrHfQxWXVNeyAfg=
+  NUGET_PASSWORD:
+    secure: CIUMwE0/iDcMPY26+YXY++vOWNxNpxT+vDYB1spShMBd6fTn1mVIN2XLq4NvhZ8NAdFHcGPlYKCT7TyCRlSWww==
+install:
+- ps: nuget sources add -Name InedoAccountFeed -Source https://ci.appveyor.com/nuget/inedo-5t8me5ojckq2 -UserName blubar@inedo.com -Password $env:NUGET_PASSWORD
+before_build:
+- ps: nuget restore "Git\Git.sln"
+build:
+  verbosity: minimal
+after_build:
+- pwsh: >-
+    $toolPath = "$($env:USERPROFILE)\inedoxpack.zip"
+
+
+    (New-Object Net.WebClient).DownloadFile('https://s3.amazonaws.com/cdn.inedo.com/tools/inedoxpack.zip', $toolPath)
+
+
+    Expand-Archive -Path $toolPath -DestinationPath .\Tools\inedoxpack
+
+
+    .\Tools\inedoxpack\inedoxpack.exe ".\Git\Git.InedoExtension\bin\Release\Git.dll" ".\Git.upack"
+
+
+    .\Tools\inedoxpack\inedoxpack.exe ".\Git\GitHub.InedoExtension\bin\Release\GitHub.dll" ".\GitHub.upack"
+
+
+    .\Tools\inedoxpack\inedoxpack.exe ".\Git\GitLab.InedoExtension\bin\Release\GitLab.dll" ".\GitLab.upack"
+artifacts:
+- path: Git.upack
+- path: GitHub.upack
+- path: GitLab.upack
+test: off
+deploy_script:
+- pwsh: >-
+    Invoke-RestMethod -Method Put `
+       -Uri 'https://56.inedo.com:8624/upack/Appveyor/upload' `
+       -ContentType 'application/zip' `
+       -InFile ".\Git.upack" `
+       -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) } `
+       -SkipCertificateCheck
+
+
+    Invoke-RestMethod -Method Put `
+       -Uri 'https://56.inedo.com:8624/upack/Appveyor/upload' `
+       -ContentType 'application/zip' `
+       -InFile ".\GitHub.upack" `
+       -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) } `
+       -SkipCertificateCheck
+
+
+    Invoke-RestMethod -Method Put `
+       -Uri 'https://56.inedo.com:8624/upack/Appveyor/upload' `
+       -ContentType 'application/zip' `
+       -InFile ".\GitLab.upack" `
+       -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) } `
+       -SkipCertificateCheck
