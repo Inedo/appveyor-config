@@ -40,7 +40,6 @@ artifacts:
 - path: Git.upack
 - path: GitHub.upack
 - path: GitLab.upack
-test: off
 deploy_script:
 - pwsh: >-
     Invoke-RestMethod -Method Put `
