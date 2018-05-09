@@ -37,8 +37,7 @@ artifacts:
 deploy_script:
 - pwsh: >-
     Invoke-RestMethod -Method Put `
-       -Uri 'https://56.inedo.com:8624/upack/Appveyor/upload' `
+       -Uri 'https://proget.inedo.com/upack/Appveyor/upload' `
        -ContentType 'application/zip' `
        -InFile ".\$($env:EXTENSION_NAME).upack" `
-       -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) } `
-       -SkipCertificateCheck
+       -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
