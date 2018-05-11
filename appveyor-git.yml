@@ -39,21 +39,21 @@ artifacts:
 deploy_script:
 - pwsh: >-
     Invoke-RestMethod -Method Put `
-       -Uri 'https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION) `
+       -Uri ('https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION)) `
        -ContentType 'application/zip' `
        -InFile ".\Git.upack" `
        -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
 
 
     Invoke-RestMethod -Method Put `
-       -Uri 'https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION) `
+       -Uri ('https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION)) `
        -ContentType 'application/zip' `
        -InFile ".\GitHub.upack" `
        -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
 
 
     Invoke-RestMethod -Method Put `
-       -Uri 'https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION) `
+       -Uri ('https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION)) `
        -ContentType 'application/zip' `
        -InFile ".\GitLab.upack" `
        -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
