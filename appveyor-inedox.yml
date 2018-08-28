@@ -30,7 +30,7 @@ install:
 
         Update-AppveyorBuild -Version ($currentVersion.ToString(3) + '-CI.' + $env:APPVEYOR_BUILD_NUMBER)
 before_build:
--ps: nuget restore "$($env:EXTENSION_NAME)\$($env:EXTENSION_NAME).sln"
+- ps: nuget restore "$($env:EXTENSION_NAME)\$($env:EXTENSION_NAME).sln"
 assembly_info:
   patch: true
   file: AssemblyInfo.cs
