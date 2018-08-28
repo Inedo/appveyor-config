@@ -18,8 +18,8 @@ install:
 
         $lastVersion = (ConvertFrom-Json (Invoke-WebRequest https://proget.inedo.com/upack/Extensions/packages?group=inedox).Content) | Where-Object name -eq 'Git' | ForEach-Object latestVersion
 
-        if ($lastReleasedVersion -ne $null) {
-          $lastVersion = [System.Version]::Parse($lastReleasedVersion)
+        if ($lastVersion -ne $null) {
+          $lastVersion = [System.Version]::Parse($lastVersion)
           $nextVersion = [System.Version]::new($lastVersion.Major, $lastVersion.Minor, $lastVersion.Build + 1)
           if ($nextVersion -gt $currentVersion) {
             $currentVersion = $nextVersion
