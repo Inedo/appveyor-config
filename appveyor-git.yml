@@ -8,52 +8,70 @@ configuration: Release
 environment:
   PROGET_API_KEY:
     secure: cK5vivAu043l5udO8/xlrju1zldGzrHfQxWXVNeyAfg=
+cache:
+  - packages -> **\packages.config
 install:
-- ps: nuget sources add -Name InedoExternalBuild -Source https://proget.inedo.com/nuget/ExternalBuild
+- ps: |
+        nuget sources add -Name InedoExternalBuild -Source https://proget.inedo.com/nuget/ExternalBuild
+
+        $currentVersion = [System.Version]::Parse((git grep -Fh '[assembly: AssemblyVersion("').Split('"')[1])
+
+        $lastVersion = (ConvertFrom-Json (Invoke-WebRequest https://proget.inedo.com/upack/Extensions/packages?group=inedox).Content) | Where-Object name -eq 'Git' | ForEach-Object latestVersion
+
+        if ($lastReleasedVersion -ne $null) {
+          $lastVersion = [System.Version]::Parse($lastReleasedVersion)
+          $nextVersion = [System.Version]::new($lastVersion.Major, $lastVersion.Minor, $lastVersion.Build + 1)
+          if ($nextVersion -gt $currentVersion) {
+            $currentVersion = $nextVersion
+          }
+        }
+
+        Set-AppveyorBuildVariable EXTENSION_VERSION $currentVersion.ToString(3)
+
+        Update-AppveyorBuild -Version ($currentVersion.ToString(3) + '-CI.' + $env:APPVEYOR_BUILD_NUMBER)
 before_build:
 - ps: nuget restore "Git\Git.sln"
+assembly_info:
+  patch: true
+  file: AssemblyInfo.cs
+  assembly_version: "$(EXTENSION_VERSION)"
+  assembly_file_version: "$(EXTENSION_VERSION)"
+  assembly_informational_version: "{version}"
 build:
   verbosity: minimal
 after_build:
-- pwsh: >-
-    $toolPath = "$($env:USERPROFILE)\inedoxpack.zip"
+- ps: |
+        $toolPath = "$($env:USERPROFILE)\inedoxpack.zip"
 
+        (New-Object Net.WebClient).DownloadFile('https://s3.amazonaws.com/cdn.inedo.com/tools/inedoxpack.zip', $toolPath)
 
-    (New-Object Net.WebClient).DownloadFile('https://s3.amazonaws.com/cdn.inedo.com/tools/inedoxpack.zip', $toolPath)
+        Expand-Archive -Path $toolPath -DestinationPath .\Tools\inedoxpack
 
+        .\Tools\inedoxpack\inedoxpack.exe ".\Git\Git.InedoExtension\bin\Release\Git.dll" ".\Git.upack"
 
-    Expand-Archive -Path $toolPath -DestinationPath .\Tools\inedoxpack
+        .\Tools\inedoxpack\inedoxpack.exe ".\Git\GitHub.InedoExtension\bin\Release\GitHub.dll" ".\GitHub.upack"
 
-
-    .\Tools\inedoxpack\inedoxpack.exe ".\Git\Git.InedoExtension\bin\Release\Git.dll" ".\Git.upack"
-
-
-    .\Tools\inedoxpack\inedoxpack.exe ".\Git\GitHub.InedoExtension\bin\Release\GitHub.dll" ".\GitHub.upack"
-
-
-    .\Tools\inedoxpack\inedoxpack.exe ".\Git\GitLab.InedoExtension\bin\Release\GitLab.dll" ".\GitLab.upack"
+        .\Tools\inedoxpack\inedoxpack.exe ".\Git\GitLab.InedoExtension\bin\Release\GitLab.dll" ".\GitLab.upack"
 artifacts:
 - path: Git.upack
 - path: GitHub.upack
 - path: GitLab.upack
 deploy_script:
-- pwsh: >-
-    Invoke-RestMethod -Method Put `
-       -Uri ('https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION)) `
-       -ContentType 'application/zip' `
-       -InFile ".\Git.upack" `
-       -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
+- ps: |
+        Invoke-RestMethod -Method Put `
+          -Uri ('https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION)) `
+          -ContentType 'application/zip' `
+          -InFile ".\Git.upack" `
+          -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
 
+        Invoke-RestMethod -Method Put `
+          -Uri ('https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION)) `
+          -ContentType 'application/zip' `
+          -InFile ".\GitHub.upack" `
+          -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
 
-    Invoke-RestMethod -Method Put `
-       -Uri ('https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION)) `
-       -ContentType 'application/zip' `
-       -InFile ".\GitHub.upack" `
-       -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
-
-
-    Invoke-RestMethod -Method Put `
-       -Uri ('https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION)) `
-       -ContentType 'application/zip' `
-       -InFile ".\GitLab.upack" `
-       -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
+        Invoke-RestMethod -Method Put `
+          -Uri ('https://proget.inedo.com/upack/Appveyor/upload?version=' + $($env:APPVEYOR_BUILD_VERSION)) `
+          -ContentType 'application/zip' `
+          -InFile ".\GitLab.upack" `
+          -Headers @{ 'X-ApiKey' = $($env:PROGET_API_KEY) }
